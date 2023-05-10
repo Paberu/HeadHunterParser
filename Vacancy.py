@@ -23,7 +23,7 @@ def parse_salary(salary):
     return None
 
 
-def detag(self, parts):
+def detag(parts):
     detagged_parts = {}
     for key, value in parts.items():
         if isinstance(value, list):  # list of Tags by crazy_search
@@ -32,10 +32,11 @@ def detag(self, parts):
                 detagged_list.append(part.text)
             detagged_parts[key.string] = detagged_list
         else:  # instance is Tag
+            cleaned_key = key.string.split(sep=':', maxsplit=1)[0]
             if value.name == 'ul':
-                detagged_parts[key.string] = [detail.text for detail in value.findAll('li')]
+                detagged_parts[cleaned_key] = [detail.text for detail in value.findAll('li')]
             else:
-                detagged_parts[key.string] = value.string
+                detagged_parts[cleaned_key] = ' '.join(value.strings)
     return detagged_parts
 
 
@@ -68,6 +69,7 @@ class Vacancy:
         detailed_information = clearify(vacancy_details)
         vacancy = cls(id=id, title=title, salary=salary, detailed_information=detailed_information,
                       key_skills=key_skills)
+        vacancy.parse_detailed_information()
         return vacancy
 
     def parse_detailed_information(self):
@@ -103,4 +105,4 @@ class Vacancy:
                                 continue
                             break
                         user_content_parts[key] = complex_value
-        return user_content_parts
+        self.detailed_information = detag(user_content_parts)
