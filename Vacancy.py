@@ -32,11 +32,11 @@ def detag(parts):
                 detagged_list.append(part.text)
             detagged_parts[key.string] = detagged_list
         else:  # instance is Tag
-            cleaned_key = key.string.split(sep=':', maxsplit=1)[0]
             if value.name == 'ul':
-                detagged_parts[cleaned_key] = [detail.text for detail in value.findAll('li')]
+                detagged_parts[key.string] = [detail.text for detail in value.findAll('li')]
             else:
-                detagged_parts[cleaned_key] = ' '.join(value.strings)
+                detagged_parts[key.string] = ' '.join(value.strings)
+        # print(key, type(key), type(value))
     return detagged_parts
 
 
@@ -49,6 +49,26 @@ class Vacancy:
         self.detailed_information = detailed_information
         self.key_skills = key_skills
 
+    def __str__(self):
+        return str(self.id) + str(self.title) + str(self.salary) + str(self.detailed_information) + str(self.key_skills)
+
+    def to_dict(self):
+        vacancy_dict = {'id': self.id, 'title': self.title, 'salary': self.salary,
+                        'detailed_information': self.detailed_information, 'key_skills': self.key_skills}
+        return vacancy_dict
+
+    @classmethod
+    def from_dict(cls, vacancy_dict):
+        vacancy = cls(id=vacancy_dict['id'],
+                      title=vacancy_dict['title'],
+                      salary=vacancy_dict['salary'],
+                      detailed_information=vacancy_dict['detailed_information'],
+                      key_skills=vacancy_dict['key_skills'])
+        return vacancy
+
+    def __repr__(self):
+        return self.__dict__
+
     @classmethod
     def create_vacancy_from_id(cls, id):
         path = f'https://hh.ru/vacancy/{id}'
@@ -60,7 +80,7 @@ class Vacancy:
         key_skills = []
         key_skills_block = soup.find('div', class_='bloko-tag-list')
         if key_skills_block:
-            key_skills = [key_skill.string for key_skill in key_skills_block.find_all('span')]
+            key_skills = [str(key_skill.string) for key_skill in key_skills_block.find_all('span')]
         vacancy_details = soup.find('div', class_='vacancy-branded-user-content')
         if not vacancy_details:
             vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
