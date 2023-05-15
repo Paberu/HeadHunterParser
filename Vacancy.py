@@ -4,42 +4,6 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 
-def clearify(soup):
-    for tag in soup.find_all():
-        if len(tag.get_text(strip=True)) == 0:
-            tag.replace_with(NavigableString(''))
-    return soup
-
-
-def parse_salary(salary):
-    money_template = re.compile(r'(\d{1,3}).(\d{3})')
-    country = re.compile(r'[USD|руб].*')
-    if not salary.endswith('не указана'):
-        salary_delta = []
-        value = country.findall(salary)
-        for money_tuple in money_template.findall(salary):
-            salary_delta.append(int(''.join(d for d in money_tuple)))
-        return salary_delta, value
-    return None
-
-
-def detag(parts):
-    detagged_parts = {}
-    for key, value in parts.items():
-        if isinstance(value, list):  # list of Tags by crazy_search
-            detagged_list = []
-            for part in value:
-                detagged_list.append(part.text)
-            detagged_parts[key.string] = detagged_list
-        else:  # instance is Tag
-            if value.name == 'ul':
-                detagged_parts[key.string] = [detail.text for detail in value.findAll('li')]
-            else:
-                detagged_parts[key.string] = ' '.join(value.strings)
-        # print(key, type(key), type(value))
-    return detagged_parts
-
-
 class Vacancy:
 
     def __init__(self, id, title, salary, detailed_information, key_skills):
@@ -76,7 +40,7 @@ class Vacancy:
         soup = BeautifulSoup(r.text, 'html.parser')
         title = ' '.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
         salary = ' '.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
-        salary = parse_salary(salary)
+        salary = cls.parse_salary(salary)
         key_skills = []
         key_skills_block = soup.find('div', class_='bloko-tag-list')
         if key_skills_block:
@@ -86,7 +50,7 @@ class Vacancy:
             vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
         if not vacancy_details:
             vacancy_details = soup.find('div', class_='g-user-content')
-        detailed_information = clearify(vacancy_details)
+        detailed_information = cls.clearify(vacancy_details)
         vacancy = cls(id=id, title=title, salary=salary, detailed_information=detailed_information,
                       key_skills=key_skills)
         vacancy.parse_detailed_information()
@@ -125,4 +89,40 @@ class Vacancy:
                                 continue
                             break
                         user_content_parts[key] = complex_value
-        self.detailed_information = detag(user_content_parts)
+        self.detailed_information = self.detag(user_content_parts)
+
+    @staticmethod
+    def clearify(soup):
+        for tag in soup.find_all():
+            if len(tag.get_text(strip=True)) == 0:
+                tag.replace_with(NavigableString(''))
+        return soup
+
+    @staticmethod
+    def parse_salary(salary):
+        money_template = re.compile(r'(\d{1,3}).(\d{3})')
+        country = re.compile(r'[USD|руб].*')
+        if not salary.endswith('не указана'):
+            salary_delta = []
+            value = country.findall(salary)
+            for money_tuple in money_template.findall(salary):
+                salary_delta.append(int(''.join(d for d in money_tuple)))
+            return salary_delta, value
+        return None
+
+    @staticmethod
+    def detag(parts):
+        detagged_parts = {}
+        for key, value in parts.items():
+            if isinstance(value, list):  # list of Tags by crazy_search
+                detagged_list = []
+                for part in value:
+                    detagged_list.append(part.text)
+                detagged_parts[key.string] = detagged_list
+            else:  # instance is Tag
+                if value.name == 'ul':
+                    detagged_parts[key.string] = [detail.text for detail in value.findAll('li')]
+                else:
+                    detagged_parts[key.string] = ' '.join(value.strings)
+            # print(key, type(key), type(value))
+        return detagged_parts
