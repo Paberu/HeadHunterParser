@@ -1,5 +1,4 @@
 import re
-
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
@@ -37,7 +36,16 @@ class Vacancy:
     def create_vacancy_from_id(cls, id):
         path = f'https://hh.ru/vacancy/{id}'
         r = requests.get(path, headers={'User-Agent': 'Custom'})
-        soup = BeautifulSoup(r.text, 'html.parser')
+        fp = open('tmp_hh.html', 'w', errors='ignore')
+        fp.write(r.text)
+        soup = BeautifulSoup(r.text, 'lxml')
+        # check if there is error in getting page info
+        while not soup.find('h1', attrs={'data-qa': 'vacancy-title'}):
+            r = requests.get(path, headers={'User-Agent': 'Custom'})
+            soup = BeautifulSoup(r.text, 'lxml')
+            soup.find('h1', attrs={'data-qa': 'vacancy-title'})
+        fp.write(soup.text)
+        fp.close()
         title = ' '.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
         salary = ' '.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
         salary = cls.parse_salary(salary)

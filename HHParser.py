@@ -1,6 +1,5 @@
 import json
 import re
-
 import requests
 from bs4 import BeautifulSoup
 
@@ -51,9 +50,6 @@ class HHParser:
             for vacancy in self.vacancies:
                 json.dump(vacancy.to_dict(), fp)
                 fp.write('\n')
-            # encoded_vacancies = jsonpickle.encode(self.vacancies, unpicklable=False, max_depth=2)
-            # fp.write(encoded_vacancies)
-            # fp.flush()
 
     def load_vacancies_from_json(self):
         with open('hhparser.json', 'r') as fp:
@@ -62,16 +58,3 @@ class HHParser:
                 obj_dict = json.loads(json_line)
                 self.add_vacancy(Vacancy.from_dict(obj_dict))
                 json_line = fp.readline()
-
-            # decoded_data = jsonpickle.decode(data)
-            # for vacancy_dict in decoded_data:
-            #     # print(vacancy_dict.keys())
-            #     # print(vacancy_dict.values())
-            #     # vacancy_dict['id'] = json.loads(vacancy_dict['id'])
-            #     # vacancy_dict['title'] = json.loads(vacancy_dict['title'])
-            #     # vacancy_dict['salary'] = json.loads(vacancy_dict['salary'] )
-            #     print(vacancy_dict['detailed_information'])
-            #     vacancy_dict['detailed_information'] = json.loads(vacancy_dict['detailed_information'])
-            #     # vacancy_dict['key_skills'] = json.loads(vacancy_dict['key_skills'])
-            #
-            #     self.add_vacancy(Vacancy.create_vacancy_from_dict(vacancy_dict))
