@@ -5,18 +5,19 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 
 class Vacancy:
 
-    def __init__(self, id, title, salary, detailed_information, key_skills):
+    def __init__(self, id, title, salary, experience, detailed_information, key_skills):
         self.id = id
         self.title = title
         self.salary = salary
+        self.experience = experience
         self.detailed_information = detailed_information
         self.key_skills = key_skills
 
     def __str__(self):
-        return str(self.id) + str(self.title) + str(self.salary) + str(self.detailed_information) + str(self.key_skills)
+        return f'{str(self.id)} {str(self.title)}'
 
     def to_dict(self):
-        vacancy_dict = {'id': self.id, 'title': self.title, 'salary': self.salary,
+        vacancy_dict = {'id': self.id, 'title': self.title, 'salary': self.salary, 'experience': self.experience,
                         'detailed_information': self.detailed_information, 'key_skills': self.key_skills}
         return vacancy_dict
 
@@ -25,6 +26,7 @@ class Vacancy:
         vacancy = cls(id=vacancy_dict['id'],
                       title=vacancy_dict['title'],
                       salary=vacancy_dict['salary'],
+                      experience=vacancy_dict['experience'],
                       detailed_information=vacancy_dict['detailed_information'],
                       key_skills=vacancy_dict['key_skills'])
         return vacancy
@@ -48,7 +50,8 @@ class Vacancy:
         fp.close()
         title = ' '.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
         salary = ' '.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
-        salary = cls.parse_salary(salary)
+        # salary = cls.parse_salary(salary)
+        experience = ' '.join(soup.find('span', attrs={'data-qa': 'vacancy-experience'}).stripped_strings)
         key_skills = []
         key_skills_block = soup.find('div', class_='bloko-tag-list')
         if key_skills_block:
@@ -59,8 +62,8 @@ class Vacancy:
         if not vacancy_details:
             vacancy_details = soup.find('div', class_='g-user-content')
         detailed_information = cls.clearify(vacancy_details)
-        vacancy = cls(id=id, title=title, salary=salary, detailed_information=detailed_information,
-                      key_skills=key_skills)
+        vacancy = cls(id=id, title=title, salary=salary, experience=experience,
+                      detailed_information=detailed_information, key_skills=key_skills)
         vacancy.parse_detailed_information()
         return vacancy
 
@@ -108,15 +111,16 @@ class Vacancy:
 
     @staticmethod
     def parse_salary(salary):
-        money_template = re.compile(r'(\d{1,3}).(\d{3})')
-        country = re.compile(r'[USD|руб].*')
-        if not salary.endswith('не указана'):
-            salary_delta = []
-            value = country.findall(salary)
-            for money_tuple in money_template.findall(salary):
-                salary_delta.append(int(''.join(d for d in money_tuple)))
-            return salary_delta, value
-        return None
+        value_template = re.compile(r'[USD|руб].*')
+        if salary.endswith('не указана'):
+            return None
+        value = value_template.search(salary).group()
+
+        salary = salary.replace('\xa0', '')
+        money_template = re.compile(r'(\d{3,7})')
+        salary_delta = list(map(int, money_template.findall(salary)))
+
+        return salary_delta, value
 
     @staticmethod
     def detag(parts):

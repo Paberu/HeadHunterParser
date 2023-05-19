@@ -8,11 +8,12 @@ from Vacancy import Vacancy
 
 class HHParser:
 
-    def __init__(self):
+    def __init__(self, search, schedule):
         self.search_path = 'https://hh.ru/search/vacancy'
-        self.search_params = {'text': 'Python', 'schedule': 'remote', 'salary': '90000', 'page': 1}
+        self.search_params = {'text': search, 'page': 1}
+        if schedule:
+            self.search_params['schedule'] = schedule
         self.pre_url_regex = re.compile(r'm.hh.ru/vacancy/(\d+)"},')
-        # self.pre_page_regex = re.compile(r'text=Python&amp;.*page=(\d*)')
         self.vacancy_ids = set()
         self.vacancies = []
         self.key_skills = {}
@@ -44,6 +45,28 @@ class HHParser:
                 self.key_skills[key_skill] = 1
             else:
                 self.key_skills[key_skill] += 1
+
+    def split_vacancies_by_salary(self):
+        salary_steps = {'None': 0}
+        for vacancy in self.vacancies:
+            print(vacancy, vacancy.salary)
+            if vacancy.salary is not None:
+                # print(salary)
+                salary = int(vacancy.salary[0][0])
+            else:
+                salary = 0
+            if salary == 0:
+                salary_steps['None'] += 1
+            else:
+                if salary < 10000:
+                    salary *= 80
+                if salary not in salary_steps.keys():
+                    salary_steps[salary] = 1
+                else:
+                    salary_steps[salary] += 1
+        return salary_steps
+
+
 
     def save_vacancies_to_json(self):
         with open('hhparser.json', 'w') as fp:
