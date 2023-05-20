@@ -49,17 +49,16 @@ class HHParser:
     def split_vacancies_by_salary(self):
         salary_steps = {'None': 0}
         for vacancy in self.vacancies:
-            print(vacancy, vacancy.salary)
-            if vacancy.salary is not None:
-                # print(salary)
-                salary = int(vacancy.salary[0][0])
-            else:
+            salary = vacancy.parse_salary(vacancy.salary)
+
+            if not salary:
                 salary = 0
+            else:
+                salary = salary[0][0]
+
             if salary == 0:
                 salary_steps['None'] += 1
             else:
-                if salary < 10000:
-                    salary *= 80
                 if salary not in salary_steps.keys():
                     salary_steps[salary] = 1
                 else:
