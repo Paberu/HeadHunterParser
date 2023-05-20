@@ -3,6 +3,9 @@ import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
 
+TAXES = 0.13
+USD_COURSE = 80
+
 class Vacancy:
 
     def __init__(self, id, title, salary, experience, detailed_information, key_skills):
@@ -119,6 +122,16 @@ class Vacancy:
         salary = salary.replace('\xa0', '')
         money_template = re.compile(r'(\d{3,7})')
         salary_delta = list(map(int, money_template.findall(salary)))
+
+        if value.endswith('до вычета налогов'):
+            for i in range(len(salary_delta)):
+                salary_delta[i] = round(salary_delta[i] * (1-TAXES))
+            value = value.replace('до вычета налогов', 'на руки')
+
+        if 'USD' in value:
+            for i in range(len(salary_delta)):
+                salary_delta[i] = salary_delta[i] * USD_COURSE
+            value = value.replace('USD', 'руб.')
 
         return salary_delta, value
 
