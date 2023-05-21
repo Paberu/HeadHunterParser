@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 TAXES = 0.13
 USD_COURSE = 80
 
+
 class Vacancy:
 
     def __init__(self, id, title, salary, experience, detailed_information, key_skills):
@@ -104,6 +105,19 @@ class Vacancy:
                             break
                         user_content_parts[key] = complex_value
         self.detailed_information = self.detag(user_content_parts)
+
+    def find_special_words_in_detailed_information(self):
+        english_word_template = re.compile(r'[A-Z][A-Za-z]*')
+        english_words = set()
+        for value in self.detailed_information.values():
+            if type(value) == list:
+                for string in value:
+                    some_words = english_word_template.findall(string)
+                    english_words.update(some_words)
+            else:
+                some_words = english_word_template.findall(value)
+                english_words.update(some_words)
+        return english_words
 
     @staticmethod
     def clearify(soup):

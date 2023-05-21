@@ -65,8 +65,6 @@ class HHParser:
                     salary_steps[salary] += 1
         return salary_steps
 
-
-
     def save_vacancies_to_json(self):
         with open('hhparser.json', 'w') as fp:
             for vacancy in self.vacancies:
