@@ -1,9 +1,12 @@
 from pprint import pprint
+import dearpygui.dearpygui as dpg
 
 from HHParser import HHParser
 from Vacancy import Vacancy
 
+
 if __name__ == '__main__':
+
     search = input('Введите через пробел слова, по которым пойдёт поиск вакансий:').split()
     if len(search) > 1:
         search = '+'.join(search)
@@ -21,13 +24,7 @@ if __name__ == '__main__':
 
     hh_parser = HHParser(search, schedule)
     hh_parser.load_vacancies_from_json()
-    ids = hh_parser.get_first_50_vacancie_ids()
-    # ids = {'79582780', }
-    for vacancy_id in ids:
-        if vacancy_id not in hh_parser.vacancy_ids:
-            vacancy = Vacancy.create_vacancy_from_id(vacancy_id)
-            hh_parser.add_vacancy(vacancy)
-    # hh_parser.save_vacancies_to_json()
-    for vacancy in hh_parser.vacancies:
-        print(vacancy.parse_salary(vacancy.salary))
-    pprint(hh_parser.split_vacancies_by_salary())
+    hh_parser.get_vacancies()
+    hh_parser.save_vacancies_to_json()
+
+    pprint(hh_parser.experience)
