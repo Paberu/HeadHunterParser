@@ -17,8 +17,9 @@ class HHParser:
         self.vacancy_ids = set()
         self.vacancies = []
         self.key_skills = {}
+        self.experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
 
-    def get_vacancy_ids(self):
+    def _get_vacancy_ids(self):
         request = requests.get(self.search_path, headers={'User-Agent': 'Custom'}, params=self.search_params)
         hh_response = request.text
         ids = set(self.pre_url_regex.findall(hh_response))
@@ -31,11 +32,19 @@ class HHParser:
             ids.update(self.pre_url_regex.findall(r.text))
         return ids
 
-    def get_first_50_vacancie_ids(self):
+    def _get_first_50_vacancie_ids(self):
         request = requests.get(self.search_path, headers={'User-Agent': 'Custom'}, params=self.search_params)
         hh_response = request.text
         ids = set(self.pre_url_regex.findall(hh_response))
         return ids
+
+    def get_vacancies(self):
+        ids = self._get_vacancy_ids()
+        # ids = {'79582780', }
+        for vacancy_id in ids:
+            if vacancy_id not in self.vacancy_ids:
+                vacancy = Vacancy.create_vacancy_from_id(vacancy_id)
+                self.add_vacancy(vacancy)
 
     def add_vacancy(self, vacancy):
         self.vacancies.append(vacancy)
@@ -45,6 +54,7 @@ class HHParser:
                 self.key_skills[key_skill] = 1
             else:
                 self.key_skills[key_skill] += 1
+        self.experience[vacancy.experience] += 1
 
     def split_vacancies_by_salary(self):
         salary_steps = {'None': 0}

@@ -40,6 +40,7 @@ class Vacancy:
 
     @classmethod
     def create_vacancy_from_id(cls, id):
+        print(id)
         path = f'https://hh.ru/vacancy/{id}'
         r = requests.get(path, headers={'User-Agent': 'Custom'})
         fp = open('tmp_hh.html', 'w', errors='ignore')
