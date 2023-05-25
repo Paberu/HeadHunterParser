@@ -39,7 +39,7 @@ class HHParser:
         return ids
 
     def get_vacancies(self):
-        ids = self._get_vacancy_ids()
+        ids = self._get_first_50_vacancie_ids()
         # ids = {'79582780', }
         for vacancy_id in ids:
             if vacancy_id not in self.vacancy_ids:
