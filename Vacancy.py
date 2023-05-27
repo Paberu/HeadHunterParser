@@ -2,9 +2,10 @@ import re
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
-
+# для валют переписать parse_salary на фабрику функций или вроде того
 TAXES = 0.13
 USD_COURSE = 80
+KZT_COURSE = 0.8
 
 
 class Vacancy:
@@ -129,10 +130,16 @@ class Vacancy:
 
     @staticmethod
     def parse_salary(salary):
-        value_template = re.compile(r'[USD|руб].*')
+        value_template = re.compile(r'[USD|KZT|руб].*')
         if salary.endswith('не указана'):
             return None
-        value = value_template.search(salary).group()
+        # value = value_template.search(salary).group()
+        value = value_template.search(salary)
+        if value is None:
+            print(salary)
+        else:
+            value = value.group()
+
 
         salary = salary.replace('\xa0', '')
         money_template = re.compile(r'(\d{3,7})')
@@ -147,6 +154,10 @@ class Vacancy:
             for i in range(len(salary_delta)):
                 salary_delta[i] = salary_delta[i] * USD_COURSE
             value = value.replace('USD', 'руб.')
+        elif 'KZT' in value:
+            for i in range(len(salary_delta)):
+                salary_delta[i] = salary_delta[i] * KZT_COURSE
+            value = value.replace('KZT', 'руб.')
 
         return salary_delta, value
 

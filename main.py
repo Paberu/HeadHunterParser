@@ -1,10 +1,18 @@
-from pprint import pprint
 import dearpygui.dearpygui as dpg
 
 from HHParser import HHParser
 from Vacancy import Vacancy
 
+
+
+# задать ключевой параметр - константу или переменную размер шрифта, можно вычислять автоматически по
+# разрешению экрана. Высоты всех виджетов в пикселях высчитывать исходя из размера шрифта.
 if __name__ == '__main__':
+
+    FONT_SIZE = 14
+    WIDGET_HEIGHT = (FONT_SIZE + 1) * 10
+    SMALL_WIDGET_HEIGHT = (FONT_SIZE + 1) * 4
+    WIDGET_WIDTH = 500
 
     main_data = {
         'hh_parser': None,
@@ -27,42 +35,50 @@ if __name__ == '__main__':
             schedule = ''
         hh_parser = HHParser(search, schedule)
         hh_parser.load_vacancies_from_json()
-        hh_parser.get_vacancies()
+        # hh_parser.get_vacancies()
         main_data['hh_parser'] = hh_parser
         for vacancy in hh_parser.vacancies:
             main_data['vacancies'][vacancy.id] = vacancy.title
-        main_data['key_skills'] = hh_parser.key_skills
+        main_data['key_skills'] = hh_parser.key_skills.values()
+        main_data['salaries'] = hh_parser.split_vacancies_by_salary().keys()
+        main_data['experience'] = hh_parser.experience
         dpg.configure_item(vacancies_list, items=list(main_data['vacancies'].values()))
-        dpg.configure_item(salaries_list, items=list(main_data['salaries'].values()))
-        dpg.configure_item(key_skills_list, items=list(main_data['key_skills'].values()))
-        dpg.configure_item(experience_list, items=list(main_data['experience'].values()))
+        dpg.configure_item(salaries_list, items=list(main_data['salaries']))
+        dpg.configure_item(key_skills_list, items=list(main_data['key_skills']))
+        dpg.configure_item(experience_list, items=list(main_data['experience']))
 
     dpg.create_context()
+
+    # # getting the window sizes
+    # main_width = dpg.get_item_width("Main")
+    # main_height = dpg.get_item_height("Main")
+    # print(f'{main_width}x{main_height}')
+    #
     with dpg.font_registry():
-        with dpg.font(r'C:\Windows\Fonts\Arial.ttf', 14, default_font=True, id='default_font'):
+        with dpg.font(r'C:\Windows\Fonts\Arial.ttf', FONT_SIZE, default_font=True, id='default_font'):
             dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
     dpg.bind_font('default_font')
 
-    with dpg.window(label='Настройка поиска', height=130, width=500):
+    with dpg.window(label='Настройка поиска', height=WIDGET_HEIGHT, width=WIDGET_WIDTH):
         dpg.add_text('Введите, что будем искать:')
         search = dpg.add_input_text(label='Введите слова, по которым будет вестись поиск.', default_value='Python',
                                     width=150)
         remote = dpg.add_checkbox(label='Только удаленная работа?', default_value=True)
         dpg.add_button(label='Начать поиск', callback=create_hhparser, user_data=[search, remote])
 
-    with dpg.window(label='Вакансии', height=300, width=500, pos=[0, 130]):
-        vacancies_list = dpg.add_listbox(items=list(main_data['vacancies'].values()))
+    with dpg.window(label='Вакансии', height=2*WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[WIDGET_WIDTH, 0]):
+        vacancies_list = dpg.add_listbox(items=list(main_data['vacancies'].values()), num_items=10, width=WIDGET_WIDTH)
 
-    with dpg.window(label='Выберите диапазон зарплат.', height=300, width=500, pos=[500, 0]):
-        salaries_list = dpg.add_listbox(items=list(main_data['salaries'].values()))
+    with dpg.window(label='Выберите диапазон зарплат.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT]):
+        salaries_list = dpg.add_listbox(items=list(main_data['salaries'].values()), num_items=10, width=WIDGET_WIDTH)
 
-    with dpg.window(label='Выбрать ключевые навыки.', height=300, width=500, pos=[500, 300]):
-        key_skills_list = dpg.add_listbox(items=list(main_data['key_skills'].values()))
+    with dpg.window(label='Выбрать ключевые навыки.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*2]):
+        key_skills_list = dpg.add_listbox(items=list(main_data['key_skills']), num_items=10, width=WIDGET_WIDTH)
 
-    with dpg.window(label='Выбрать стаж.', height=300, width=500, pos=[500, 600]):
-        experience_list = dpg.add_listbox(items=list(main_data['experience'].values()))
+    with dpg.window(label='Выбрать стаж.', height=SMALL_WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*3]):
+        experience_list = dpg.add_listbox(items=list(main_data['experience'].values()), num_items=4, width=WIDGET_WIDTH)
 
-    dpg.create_viewport(title='HHParser', width=505, min_height=1030, max_height=800)
+    dpg.create_viewport(title='HHParser', width=1005, min_height=800, max_height=1000)
     dpg.setup_dearpygui()
     dpg.show_viewport()
     dpg.start_dearpygui()
