@@ -1,5 +1,6 @@
 import json
 import re
+
 import requests
 from bs4 import BeautifulSoup
 
@@ -57,23 +58,34 @@ class HHParser:
         self.experience[vacancy.experience] += 1
 
     def split_vacancies_by_salary(self):
-        salary_steps = {'None': 0}
+        salary_not_set = 0
+        salary_too_big = 0
+        salary_steps = {}
+        salary_step = 40000
+        for i in range(1, 11):
+            salary_steps[i * salary_step] = 0
+
         for vacancy in self.vacancies:
-            salary = vacancy.parse_salary(vacancy.salary)
-
-            if not salary:
-                salary = 0
-            else:
-                salary = salary[0][0]
-
-            if salary == 0:
-                salary_steps['None'] += 1
-            else:
-                if salary not in salary_steps.keys():
-                    salary_steps[salary] = 1
+            if vacancy.salary:
+                salary = vacancy.salary[0]
+                for key in salary_steps.keys():
+                    if salary < key:
+                        salary_steps[key] += 1
+                        break
                 else:
-                    salary_steps[salary] += 1
-        return salary_steps
+                    salary_too_big += 1
+            else:
+                salary_not_set += 1
+
+        salary_list = []
+        salary_list.append(f'З/п не указана - {salary_not_set}')
+        previous_step = 0
+        for salary_step, count in salary_steps.items():
+            salary_list.append(f'З/п от {previous_step} до {salary_step} - {count}')
+            previous_step = salary_step
+        salary_list.append(f'З/п выше, чем {salary_step} - {salary_too_big}')
+
+        return salary_list
 
     def save_vacancies_to_json(self):
         with open('hhparser.json', 'w') as fp:

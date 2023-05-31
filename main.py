@@ -4,7 +4,6 @@ from HHParser import HHParser
 from Vacancy import Vacancy
 
 
-
 # задать ключевой параметр - константу или переменную размер шрифта, можно вычислять автоматически по
 # разрешению экрана. Высоты всех виджетов в пикселях высчитывать исходя из размера шрифта.
 if __name__ == '__main__':
@@ -18,7 +17,7 @@ if __name__ == '__main__':
         'hh_parser': None,
         'vacancies': {},
         'key_skills': {},
-        'salaries': {},
+        'salaries': [],
         'experience': {}
     }
 
@@ -33,19 +32,23 @@ if __name__ == '__main__':
             schedule = 'remote'
         else:
             schedule = ''
+
         hh_parser = HHParser(search, schedule)
         hh_parser.load_vacancies_from_json()
-        # hh_parser.get_vacancies()
+        hh_parser.get_vacancies()
+        hh_parser.save_vacancies_to_json()
+
         main_data['hh_parser'] = hh_parser
         for vacancy in hh_parser.vacancies:
             main_data['vacancies'][vacancy.id] = vacancy.title
         main_data['key_skills'] = hh_parser.key_skills.values()
-        main_data['salaries'] = hh_parser.split_vacancies_by_salary().keys()
+        main_data['salaries'] = hh_parser.split_vacancies_by_salary()
         main_data['experience'] = hh_parser.experience
         dpg.configure_item(vacancies_list, items=list(main_data['vacancies'].values()))
         dpg.configure_item(salaries_list, items=list(main_data['salaries']))
         dpg.configure_item(key_skills_list, items=list(main_data['key_skills']))
         dpg.configure_item(experience_list, items=list(main_data['experience']))
+        hh_parser.save_vacancies_to_json()
 
     dpg.create_context()
 
@@ -60,17 +63,19 @@ if __name__ == '__main__':
     dpg.bind_font('default_font')
 
     with dpg.window(label='Настройка поиска', height=WIDGET_HEIGHT, width=WIDGET_WIDTH):
-        dpg.add_text('Введите, что будем искать:')
-        search = dpg.add_input_text(label='Введите слова, по которым будет вестись поиск.', default_value='Python',
-                                    width=150)
+        dpg.add_text('Введите слова, по которым будет вестись поиск:')
+        search = dpg.add_input_text(default_value='Python', width=WIDGET_WIDTH)
         remote = dpg.add_checkbox(label='Только удаленная работа?', default_value=True)
+        dpg.add_text('Введите границы интересующего диапазона зарплат:')
+        bottom_of_salary_range = dpg.add_input_int()
+        top_of_the_salary_range = dpg.add_input_int()
         dpg.add_button(label='Начать поиск', callback=create_hhparser, user_data=[search, remote])
 
     with dpg.window(label='Вакансии', height=2*WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[WIDGET_WIDTH, 0]):
         vacancies_list = dpg.add_listbox(items=list(main_data['vacancies'].values()), num_items=10, width=WIDGET_WIDTH)
 
     with dpg.window(label='Выберите диапазон зарплат.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT]):
-        salaries_list = dpg.add_listbox(items=list(main_data['salaries'].values()), num_items=10, width=WIDGET_WIDTH)
+        salaries_list = dpg.add_listbox(items=list(main_data['salaries']), num_items=10, width=WIDGET_WIDTH)
 
     with dpg.window(label='Выбрать ключевые навыки.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*2]):
         key_skills_list = dpg.add_listbox(items=list(main_data['key_skills']), num_items=10, width=WIDGET_WIDTH)

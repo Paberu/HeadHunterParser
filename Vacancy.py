@@ -41,7 +41,6 @@ class Vacancy:
 
     @classmethod
     def create_vacancy_from_id(cls, id):
-        print(id)
         path = f'https://hh.ru/vacancy/{id}'
         r = requests.get(path, headers={'User-Agent': 'Custom'})
         fp = open('tmp_hh.html', 'w', errors='ignore')
@@ -56,7 +55,6 @@ class Vacancy:
         fp.close()
         title = ' '.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
         salary = ' '.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
-        # salary = cls.parse_salary(salary)
         experience = ' '.join(soup.find('span', attrs={'data-qa': 'vacancy-experience'}).stripped_strings)
         key_skills = []
         key_skills_block = soup.find('div', class_='bloko-tag-list')
@@ -70,6 +68,8 @@ class Vacancy:
         detailed_information = cls.clearify(vacancy_details)
         vacancy = cls(id=id, title=title, salary=salary, experience=experience,
                       detailed_information=detailed_information, key_skills=key_skills)
+        print(id, title, salary, experience)
+        vacancy._parse_salary()
         vacancy.parse_detailed_information()
         return vacancy
 
@@ -128,18 +128,10 @@ class Vacancy:
                 tag.replace_with(NavigableString(''))
         return soup
 
-    @staticmethod
-    def parse_salary(salary):
+    @classmethod
+    def parse_salary(cls, salary):
         value_template = re.compile(r'[USD|KZT|руб].*')
-        if salary.endswith('не указана'):
-            return None
-        # value = value_template.search(salary).group()
-        value = value_template.search(salary)
-        if value is None:
-            print(salary)
-        else:
-            value = value.group()
-
+        value = value_template.search(salary).group()
 
         salary = salary.replace('\xa0', '')
         money_template = re.compile(r'(\d{3,7})')
@@ -153,13 +145,14 @@ class Vacancy:
         if 'USD' in value:
             for i in range(len(salary_delta)):
                 salary_delta[i] = salary_delta[i] * USD_COURSE
-            value = value.replace('USD', 'руб.')
         elif 'KZT' in value:
             for i in range(len(salary_delta)):
                 salary_delta[i] = salary_delta[i] * KZT_COURSE
-            value = value.replace('KZT', 'руб.')
 
-        return salary_delta, value
+        return salary_delta
+
+    def _parse_salary(self):
+        self.salary = Vacancy.parse_salary(self.salary)
 
     @staticmethod
     def detag(parts):
