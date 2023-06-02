@@ -35,20 +35,19 @@ if __name__ == '__main__':
 
         hh_parser = HHParser(search, schedule)
         hh_parser.load_vacancies_from_json()
-        hh_parser.get_vacancies()
-        hh_parser.save_vacancies_to_json()
+        # hh_parser.get_vacancies()
+        # hh_parser.save_vacancies_to_json()
 
         main_data['hh_parser'] = hh_parser
         for vacancy in hh_parser.vacancies:
             main_data['vacancies'][vacancy.id] = vacancy.title
-        main_data['key_skills'] = hh_parser.key_skills.values()
+        main_data['key_skills'] = hh_parser.sort_key_skills()
         main_data['salaries'] = hh_parser.split_vacancies_by_salary()
         main_data['experience'] = hh_parser.experience
         dpg.configure_item(vacancies_list, items=list(main_data['vacancies'].values()))
         dpg.configure_item(salaries_list, items=list(main_data['salaries']))
         dpg.configure_item(key_skills_list, items=list(main_data['key_skills']))
         dpg.configure_item(experience_list, items=list(main_data['experience']))
-        hh_parser.save_vacancies_to_json()
 
     dpg.create_context()
 
@@ -67,8 +66,8 @@ if __name__ == '__main__':
         search = dpg.add_input_text(default_value='Python', width=WIDGET_WIDTH)
         remote = dpg.add_checkbox(label='Только удаленная работа?', default_value=True)
         dpg.add_text('Введите границы интересующего диапазона зарплат:')
-        bottom_of_salary_range = dpg.add_input_int()
-        top_of_the_salary_range = dpg.add_input_int()
+        # bottom_of_salary_range = dpg.add_input_int()
+        # top_of_the_salary_range = dpg.add_input_int()
         dpg.add_button(label='Начать поиск', callback=create_hhparser, user_data=[search, remote])
 
     with dpg.window(label='Вакансии', height=2*WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[WIDGET_WIDTH, 0]):

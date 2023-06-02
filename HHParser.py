@@ -87,6 +87,10 @@ class HHParser:
 
         return salary_list
 
+    def sort_key_skills(self):
+        sorted_key_skills = sorted(self.key_skills.items(), key=lambda x: x[1], reverse=True)
+        return [f'{skill[0]} - {skill[1]}' for skill in sorted_key_skills]
+
     def save_vacancies_to_json(self):
         with open('hhparser.json', 'w') as fp:
             for vacancy in self.vacancies:
