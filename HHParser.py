@@ -67,13 +67,13 @@ class HHParser:
 
         for vacancy in self.vacancies:
             if vacancy.salary:
-                salary = vacancy.salary[0]
-                for key in salary_steps.keys():
-                    if salary < key:
-                        salary_steps[key] += 1
-                        break
-                else:
-                    salary_too_big += 1
+                for salary in vacancy.salary:
+                    for key in salary_steps.keys():
+                        if salary < key:
+                            salary_steps[key] += 1
+                            break
+                    else:
+                        salary_too_big += 1
             else:
                 salary_not_set += 1
 

@@ -1,3 +1,5 @@
+from pprint import pprint
+
 import dearpygui.dearpygui as dpg
 
 from HHParser import HHParser
@@ -49,6 +51,37 @@ if __name__ == '__main__':
         dpg.configure_item(key_skills_list, items=list(main_data['key_skills']))
         dpg.configure_item(experience_list, items=list(main_data['experience']))
 
+    def filter_by_salary(sender, data):
+
+        for position, value in enumerate(main_data['salaries']):
+            if value == data:
+                salary_position = position
+                break
+
+        if salary_position == 0:
+            lowest_salary = 0
+            highest_salary = 0
+        elif salary_position == 11:
+            lowest_salary = 400000
+            highest_salary = float('infinity')
+        else:
+            highest_salary = salary_position * 40000
+            lowest_salary = highest_salary - 40000
+
+        filtered_vacancies = []
+        for vacancy in main_data['hh_parser'].vacancies:
+            if salary_position != 0:
+                for salary_part in vacancy.salary:
+                    if isinstance(salary_part, int):
+                        if lowest_salary < salary_part < highest_salary:
+                            filtered_vacancies.append(vacancy)
+                            continue
+            else:
+                if not vacancy.salary:
+                    filtered_vacancies.append(vacancy)
+
+        dpg.configure_item(vacancies_list, items=filtered_vacancies)
+
     dpg.create_context()
 
     # # getting the window sizes
@@ -71,10 +104,13 @@ if __name__ == '__main__':
         dpg.add_button(label='Начать поиск', callback=create_hhparser, user_data=[search, remote])
 
     with dpg.window(label='Вакансии', height=2*WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[WIDGET_WIDTH, 0]):
-        vacancies_list = dpg.add_listbox(items=list(main_data['vacancies'].values()), num_items=10, width=WIDGET_WIDTH)
+        vacancies_list = dpg.add_listbox(items=list(main_data['vacancies'].values()),
+                                         num_items=10, width=WIDGET_WIDTH)
 
     with dpg.window(label='Выберите диапазон зарплат.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT]):
-        salaries_list = dpg.add_listbox(items=list(main_data['salaries']), num_items=10, width=WIDGET_WIDTH)
+        salaries_list = dpg.add_listbox(items=list(main_data['salaries']),
+                                        num_items=10, width=WIDGET_WIDTH,
+                                        callback=filter_by_salary)
 
     with dpg.window(label='Выбрать ключевые навыки.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*2]):
         key_skills_list = dpg.add_listbox(items=list(main_data['key_skills']), num_items=10, width=WIDGET_WIDTH)
