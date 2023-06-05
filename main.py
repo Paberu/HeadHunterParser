@@ -59,8 +59,7 @@ if __name__ == '__main__':
                 break
 
         if salary_position == 0:
-            lowest_salary = 0
-            highest_salary = 0
+            lowest_salary = highest_salary = 0
         elif salary_position == 11:
             lowest_salary = 400000
             highest_salary = float('infinity')
@@ -72,10 +71,9 @@ if __name__ == '__main__':
         for vacancy in main_data['hh_parser'].vacancies:
             if salary_position != 0:
                 for salary_part in vacancy.salary:
-                    if isinstance(salary_part, int):
-                        if lowest_salary < salary_part < highest_salary:
-                            filtered_vacancies.append(vacancy)
-                            continue
+                    if lowest_salary < salary_part < highest_salary:
+                        filtered_vacancies.append(vacancy)
+                        continue
             else:
                 if not vacancy.salary:
                     filtered_vacancies.append(vacancy)
