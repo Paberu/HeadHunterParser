@@ -80,6 +80,21 @@ if __name__ == '__main__':
 
         dpg.configure_item(vacancies_list, items=filtered_vacancies)
 
+    def filter_by_experience(sender, data):
+        filtered_vacancies = []
+        for vacancy in main_data['hh_parser'].vacancies:
+            if vacancy.experience == data:
+                filtered_vacancies.append(vacancy)
+        dpg.configure_item(vacancies_list, items=filtered_vacancies)
+
+    def filter_by_key_skills(sender, data):
+        filtered_vacancies = []
+        key_skill = data.split('-')[0].strip()
+        for vacancy in main_data['hh_parser'].vacancies:
+            if key_skill in vacancy.key_skills:
+                filtered_vacancies.append(vacancy)
+        dpg.configure_item(vacancies_list, items=filtered_vacancies)
+
     dpg.create_context()
 
     # # getting the window sizes
@@ -110,11 +125,15 @@ if __name__ == '__main__':
                                         num_items=10, width=WIDGET_WIDTH,
                                         callback=filter_by_salary)
 
-    with dpg.window(label='Выбрать ключевые навыки.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*2]):
-        key_skills_list = dpg.add_listbox(items=list(main_data['key_skills']), num_items=10, width=WIDGET_WIDTH)
+    with dpg.window(label='Выбрать стаж.', height=SMALL_WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*2]):
+        experience_list = dpg.add_listbox(items=list(main_data['experience'].values()),
+                                          num_items=5, width=WIDGET_WIDTH,
+                                          callback=filter_by_experience)
 
-    with dpg.window(label='Выбрать стаж.', height=SMALL_WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*3]):
-        experience_list = dpg.add_listbox(items=list(main_data['experience'].values()), num_items=4, width=WIDGET_WIDTH)
+    with dpg.window(label='Выбрать ключевые навыки.', height=WIDGET_HEIGHT, width=WIDGET_WIDTH, pos=[0, WIDGET_HEIGHT*2+SMALL_WIDGET_HEIGHT]):
+        key_skills_list = dpg.add_listbox(items=list(main_data['key_skills']),
+                                          num_items=10, width=WIDGET_WIDTH,
+                                          callback=filter_by_key_skills)
 
     dpg.create_viewport(title='HHParser', width=1005, min_height=800, max_height=1000)
     dpg.setup_dearpygui()
