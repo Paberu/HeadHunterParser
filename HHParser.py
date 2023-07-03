@@ -7,6 +7,11 @@ from bs4 import BeautifulSoup
 from Vacancy import Vacancy
 
 
+def translate_key_skills_dict_to_list(key_skills_dict):
+    sorted_key_skills = sorted(key_skills_dict.items(), key=lambda x: x[1], reverse=True)
+    return [f'{skill[0]} - {skill[1]}' for skill in sorted_key_skills]
+
+
 class HHParser:
 
     def __init__(self, search, schedule):
@@ -17,8 +22,13 @@ class HHParser:
         self.pre_url_regex = re.compile(r'm.hh.ru/vacancy/(\d+)"},')
         self.vacancy_ids = set()
         self.vacancies = []
-        self.key_skills = {}
+        self.vacancies_filtered_by_salaries = []
+        self.vacancies_filtered_by_experience_and_salaries = []
+        self.key_skills_filtered_by_experience_and_salaries = {}
         self.experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
+        self.experience_filtered_by_salaries = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
+        self.salaries = []
+        self.key_skills = {}
 
     def _get_vacancy_ids(self):
         request = requests.get(self.search_path, headers={'User-Agent': 'Custom'}, params=self.search_params)
@@ -85,11 +95,32 @@ class HHParser:
             previous_step = salary_step
         salary_list.append(f'З/п выше, чем {salary_step} - {salary_too_big}')
 
-        return salary_list
+        self.salaries = salary_list
+
+    def filter_vacancies_by_salary(self, lowest_salary, highest_salary):
+        filtered_vacancies = []
+        filtered_vacancies_experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
+        for vacancy in self.vacancies:
+            if lowest_salary == highest_salary == 0:
+                for salary_part in vacancy.salary:
+                    if lowest_salary < salary_part < highest_salary:
+                        if vacancy not in filtered_vacancies:
+                            filtered_vacancies.append(vacancy)
+                            filtered_vacancies_experience[vacancy.experience] += 1
+                            continue
+            else:
+                if not vacancy.salary:
+                    if vacancy not in filtered_vacancies:
+                        filtered_vacancies.append(vacancy)
+                        filtered_vacancies_experience[vacancy.experience] += 1
+
+        self.vacancies_filtered_by_experience_and_salaries = []
+        self.key_skills_filtered_by_experience_and_salaries = []
+        self.vacancies_filtered_by_salaries = filtered_vacancies
+        self.experience_filtered_by_salaries = filtered_vacancies_experience
 
     def sort_key_skills(self):
-        sorted_key_skills = sorted(self.key_skills.items(), key=lambda x: x[1], reverse=True)
-        return [f'{skill[0]} - {skill[1]}' for skill in sorted_key_skills]
+        translate_key_skills_dict_to_list(self.key_skills)
 
     def save_vacancies_to_json(self):
         with open('hhparser.json', 'w') as fp:

@@ -1,14 +1,7 @@
-from pprint import pprint
-
 import dearpygui.dearpygui as dpg
 
-from HHParser import HHParser
-from Vacancy import Vacancy
+from HHParser import HHParser, translate_key_skills_dict_to_list
 
-
-def translate_key_skills_dict_to_list(key_skills_dict):
-    sorted_key_skills = sorted(key_skills_dict.items(), key=lambda x: x[1], reverse=True)
-    return [f'{skill[0]} - {skill[1]}' for skill in sorted_key_skills]
 
 # задать ключевой параметр - константу или переменную размер шрифта, можно вычислять автоматически по
 # разрешению экрана. Высоты всех виджетов в пикселях высчитывать исходя из размера шрифта.
@@ -22,7 +15,7 @@ if __name__ == '__main__':
     WIDGET_WIDTH = 500
 
     main_data = {
-        'hh_parser': None,
+        'hh_parser': HHParser('', ''),
         'vacancies': [],
         'key_skills': {},
         'salaries': [],
@@ -43,23 +36,18 @@ if __name__ == '__main__':
 
         hh_parser = HHParser(search, schedule)
         hh_parser.load_vacancies_from_json()
-        # hh_parser.get_vacancies()
-        # hh_parser.save_vacancies_to_json()
 
         main_data['hh_parser'] = hh_parser
         main_data['vacancies'] = hh_parser.vacancies
         main_data['key_skills'] = hh_parser.sort_key_skills()
-        main_data['salaries'] = hh_parser.split_vacancies_by_salary()
+        hh_parser.split_vacancies_by_salary()
         main_data['experience'] = hh_parser.experience
         dpg.configure_item('vacancies_list', items=list(main_data['vacancies']))
         dpg.configure_item('salary_label', show=True)
-        dpg.configure_item('salaries_list', items=list(main_data['salaries']), show=True)
-        dpg.configure_item('key_skills_list', items=list(main_data['key_skills']))
-        dpg.configure_item('experience_list', items=list(main_data['experience']))
+        dpg.configure_item('salaries_list', items=list(hh_parser.salaries), show=True)
 
     def filter_by_salary(sender, data):
-
-        for position, value in enumerate(main_data['salaries']):
+        for position, value in enumerate(main_data['hh_parser'].salaries):
             if value == data:
                 salary_position = position
                 break
@@ -73,34 +61,18 @@ if __name__ == '__main__':
             highest_salary = salary_position * 40000
             lowest_salary = highest_salary - 40000
 
-        filtered_vacancies = []
-        filtered_vacancies_experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
-        for vacancy in main_data['hh_parser'].vacancies:
-            if salary_position != 0:
-                for salary_part in vacancy.salary:
-                    if lowest_salary < salary_part < highest_salary:
-                        if vacancy not in filtered_vacancies:
-                            filtered_vacancies.append(vacancy)
-                            filtered_vacancies_experience[vacancy.experience] += 1
-                            continue
-            else:
-                if not vacancy.salary:
-                    if vacancy not in filtered_vacancies:
-                        filtered_vacancies.append(vacancy)
-                        filtered_vacancies_experience[vacancy.experience] += 1
+        hh_parser = main_data['hh_parser']
+        hh_parser.filter_vacancies_by_salary(lowest_salary, highest_salary)
 
-        main_data['vacancies_filtered_by_experience_and_salaries'] = []
-        main_data['key_skills_filtered_by_experience and salaries'] = []
-        main_data['vacancies_filtered_by_salaries'] = filtered_vacancies
         dpg.configure_item('vacancy_window', show=True)
-        dpg.configure_item('vacancies_list', items=filtered_vacancies, show=True)
-        dpg.configure_item('experience_list', items=list(filtered_vacancies_experience), show=True)
+        dpg.configure_item('vacancies_list', items=hh_parser.vacancies_filtered_by_salaries, show=True)
+        dpg.configure_item('experience_list', items=list(hh_parser.experience_filtered_by_salaries), show=True)
         dpg.configure_item('experience_label', show=True)
 
     def filter_by_experience(sender, data):
         filtered_vacancies = []
         key_skills = {}
-        for vacancy in main_data['vacancies_filtered_by_salaries']:
+        for vacancy in main_data['hh_parser'].vacancies_filtered_by_salaries:
             if vacancy.experience == data:
                 filtered_vacancies.append(vacancy)
                 for key_skill in vacancy.key_skills:
@@ -108,8 +80,8 @@ if __name__ == '__main__':
                         key_skills[key_skill] = 1
                     else:
                         key_skills[key_skill] += 1
-        main_data['vacancies_filtered_by_experience_and_salaries'] = filtered_vacancies
-        main_data['key_skills_filtered_by_experience and salaries'] = key_skills
+        main_data['hh_parser'].vacancies_filtered_by_experience_and_salaries = filtered_vacancies
+        main_data['hh_parser'].key_skills_filtered_by_experience_and_salaries = key_skills
         dpg.configure_item('vacancies_list', items=filtered_vacancies)
         dpg.configure_item('key_skills_list', items=translate_key_skills_dict_to_list(key_skills), show=True)
 
@@ -145,7 +117,6 @@ if __name__ == '__main__':
                 vacancy_body = ''
                 for key, value in vacancy.detailed_information.items():
                     vacancy_body += f'{key}\n{value}\n'
-                    piska = 'Katya'
                 dpg.configure_item('vacancy_body', default_value=vacancy_body)
 
     dpg.create_context()
