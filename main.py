@@ -8,8 +8,8 @@ from HHParser import HHParser, translate_key_skills_dict_to_list
 if __name__ == '__main__':
 
     FONT_SIZE = 14
-    SEARCH_WIDGET_HEIGHT = (FONT_SIZE + 1) * 10 + 10
-    FILTER_WIDGET_HEIGHT = (FONT_SIZE + 1) * 25 + 10
+    SEARCH_WIDGET_HEIGHT = (FONT_SIZE + 1) * 10 + FONT_SIZE
+    FILTER_WIDGET_HEIGHT = (FONT_SIZE + 1) * 45 + FONT_SIZE
     VACANCIES_WIDGET_HEIGHT = SEARCH_WIDGET_HEIGHT + FILTER_WIDGET_HEIGHT
     SMALL_WIDGET_HEIGHT = (FONT_SIZE + 1) * 4
     WIDGET_WIDTH = 500
@@ -35,19 +35,17 @@ if __name__ == '__main__':
             schedule = ''
 
         hh_parser = HHParser(search, schedule)
-        hh_parser.load_vacancies_from_json()
-
-        main_data['hh_parser'] = hh_parser
-        main_data['vacancies'] = hh_parser.vacancies
-        main_data['key_skills'] = hh_parser.sort_key_skills()
+        # hh_parser.load_vacancies_from_json()
+        hh_parser.get_vacancies()
         hh_parser.split_vacancies_by_salary()
-        main_data['experience'] = hh_parser.experience
-        dpg.configure_item('vacancies_list', items=list(main_data['vacancies']))
+        main_data['hh_parser'] = hh_parser
+        dpg.configure_item('vacancies_list', items=list(hh_parser.vacancies))
         dpg.configure_item('salary_label', show=True)
         dpg.configure_item('salaries_list', items=list(hh_parser.salaries), show=True)
 
     def filter_by_salary(sender, data):
-        for position, value in enumerate(main_data['hh_parser'].salaries):
+        hh_parser = main_data['hh_parser']
+        for position, value in enumerate(hh_parser.salaries):
             if value == data:
                 salary_position = position
                 break
@@ -61,7 +59,6 @@ if __name__ == '__main__':
             highest_salary = salary_position * 40000
             lowest_salary = highest_salary - 40000
 
-        hh_parser = main_data['hh_parser']
         hh_parser.filter_vacancies_by_salary(lowest_salary, highest_salary)
 
         dpg.configure_item('vacancy_window', show=True)
@@ -83,16 +80,17 @@ if __name__ == '__main__':
         main_data['hh_parser'].vacancies_filtered_by_experience_and_salaries = filtered_vacancies
         main_data['hh_parser'].key_skills_filtered_by_experience_and_salaries = key_skills
         dpg.configure_item('vacancies_list', items=filtered_vacancies)
+        dpg.configure_item('key_skills_label', show=True)
         dpg.configure_item('key_skills_list', items=translate_key_skills_dict_to_list(key_skills), show=True)
 
     def filter_by_key_skills(sender, data):
-        if 'vacancies_filtered_by_experience_and_salaries' in main_data and main_data[
-            'vacancies_filtered_by_experience_and_salaries']:
-            vacancies = main_data['vacancies_filtered_by_experience_and_salaries']
-        elif 'vacancies_filtered_by_salaries' in main_data and main_data['vacancies_filtered_by_salaries']:
-            vacancies = main_data['vacancies_filtered_by_salaries']
+        hh_parser = main_data['hh_parser']
+        if hh_parser.vacancies_filtered_by_experience_and_salaries:
+            vacancies = hh_parser.vacancies_filtered_by_experience_and_salaries
+        elif hh_parser.vacancies_filtered_by_salaries:
+            vacancies = hh_parser.vacancies_filtered_by_salaries
         else:
-            vacancies = main_data['vacancies']
+            vacancies = hh_parser.vacancies
         filtered_vacancies = []
         key_skill = data.split('-')[0].strip()
         for vacancy in vacancies:
@@ -102,12 +100,13 @@ if __name__ == '__main__':
 
     def show_vacancy_details(sender, data):
         vacancy_id, vacancy_title = data.split(maxsplit=1)
-        if 'vacancies_filtered_by_experience_and_salaries' in main_data and main_data['vacancies_filtered_by_experience_and_salaries']:
-             filtered_vacancies = main_data['vacancies_filtered_by_experience_and_salaries']
-        elif 'vacancies_filtered_by_salaries' in main_data and main_data['vacancies_filtered_by_salaries']:
-            filtered_vacancies = main_data['vacancies_filtered_by_salaries']
+        hh_parser = main_data['hh_parser']
+        if hh_parser.vacancies_filtered_by_experience_and_salaries:
+            filtered_vacancies = hh_parser.vacancies_filtered_by_experience_and_salaries
+        elif hh_parser.vacancies_filtered_by_salaries:
+            filtered_vacancies = hh_parser.vacancies_filtered_by_salaries
         else:
-            filtered_vacancies = main_data['vacancies']
+            filtered_vacancies = hh_parser.vacancies
 
         for vacancy in filtered_vacancies:
             if vacancy.id == vacancy_id:
@@ -116,7 +115,12 @@ if __name__ == '__main__':
                 dpg.configure_item('vacancy_title', default_value=vacancy_title)
                 vacancy_body = ''
                 for key, value in vacancy.detailed_information.items():
-                    vacancy_body += f'{key}\n{value}\n'
+                    vacancy_body += f'{key}:\n'
+                    if isinstance(value, list):
+                        for value_part in value:
+                            vacancy_body += f'{value_part}\n'
+                    else:
+                        vacancy_body += f'{value}\n'
                 dpg.configure_item('vacancy_body', default_value=vacancy_body)
 
     dpg.create_context()
@@ -136,18 +140,18 @@ if __name__ == '__main__':
     with dpg.window(label='Фильтр вакансий', height=FILTER_WIDGET_HEIGHT, width=WIDGET_WIDTH,
                     pos=[0, SEARCH_WIDGET_HEIGHT]):
         dpg.add_text('Выберите диапазон зарплат:', show=False, tag='salary_label')
-        dpg.add_listbox(items=list(main_data['salaries']), num_items=10, width=WIDGET_WIDTH, callback=filter_by_salary,
+        dpg.add_listbox(items=list(main_data['salaries']), num_items=12, width=WIDGET_WIDTH, callback=filter_by_salary,
                         tag='salaries_list', show=False)
         dpg.add_text('Выберите желаемый опыт работы:', show=False, tag='experience_label')
-        dpg.add_listbox(items=list(main_data['experience'].values()), num_items=5, width=WIDGET_WIDTH,
+        dpg.add_listbox(items=list(main_data['experience'].values()), num_items=4, width=WIDGET_WIDTH,
                         callback=filter_by_experience, tag='experience_list', show=False)
         dpg.add_text('Выберите ключевой навык из описания вакансии:', show=False, tag='key_skills_label')
-        dpg.add_listbox(items=list(main_data['key_skills']), num_items=10, width=WIDGET_WIDTH,
+        dpg.add_listbox(items=list(main_data['key_skills']), num_items=14, width=WIDGET_WIDTH,
                         callback=filter_by_key_skills, tag='key_skills_list', show=False)
 
     with dpg.window(label='Вакансии', height=VACANCIES_WIDGET_HEIGHT, width=WIDGET_WIDTH,
                     pos=[WIDGET_WIDTH, 0], tag='vacancy_window', show=False):
-        dpg.add_listbox(items=list(main_data['vacancies']), num_items=25, width=WIDGET_WIDTH,
+        dpg.add_listbox(items=list(main_data['vacancies']), num_items=44, width=WIDGET_WIDTH,
                         callback=show_vacancy_details, tag='vacancies_list', show=False)
 
     with dpg.window(label='Описание вакансии', height=VACANCIES_WIDGET_HEIGHT, width=WIDGET_WIDTH,
@@ -158,6 +162,7 @@ if __name__ == '__main__':
 
     dpg.create_viewport(title='HHParser')
     dpg.setup_dearpygui()
+    dpg.toggle_viewport_fullscreen()
     dpg.show_viewport()
     dpg.start_dearpygui()
     dpg.destroy_context()

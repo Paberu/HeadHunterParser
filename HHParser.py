@@ -102,17 +102,17 @@ class HHParser:
         filtered_vacancies_experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
         for vacancy in self.vacancies:
             if lowest_salary == highest_salary == 0:
+                if not vacancy.salary:
+                    if vacancy not in filtered_vacancies:
+                        filtered_vacancies.append(vacancy)
+                        filtered_vacancies_experience[vacancy.experience] += 1
+            else:
                 for salary_part in vacancy.salary:
                     if lowest_salary < salary_part < highest_salary:
                         if vacancy not in filtered_vacancies:
                             filtered_vacancies.append(vacancy)
                             filtered_vacancies_experience[vacancy.experience] += 1
                             continue
-            else:
-                if not vacancy.salary:
-                    if vacancy not in filtered_vacancies:
-                        filtered_vacancies.append(vacancy)
-                        filtered_vacancies_experience[vacancy.experience] += 1
 
         self.vacancies_filtered_by_experience_and_salaries = []
         self.key_skills_filtered_by_experience_and_salaries = []
