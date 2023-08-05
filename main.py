@@ -113,15 +113,7 @@ if __name__ == '__main__':
                 dpg.configure_item('vacancy_details_window', show=True)
                 dpg.configure_item('vacancy_id', default_value=vacancy_id)
                 dpg.configure_item('vacancy_title', default_value=vacancy_title)
-                vacancy_body = ''
-                for key, value in vacancy.detailed_information.items():
-                    vacancy_body += f'{key}:\n'
-                    if isinstance(value, list):
-                        for value_part in value:
-                            vacancy_body += f'{value_part}\n'
-                    else:
-                        vacancy_body += f'{value}\n'
-                dpg.configure_item('vacancy_body', default_value=vacancy_body)
+                dpg.configure_item('vacancy_body', default_value=vacancy.unparsed_information)
 
     dpg.create_context()
 

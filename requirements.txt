@@ -7,3 +7,4 @@ selenium
 lxml
 html5lib
 dearpygui
+aiogram

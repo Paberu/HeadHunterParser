@@ -16,6 +16,7 @@ class Vacancy:
         self.salary = salary
         self.experience = experience
         self.detailed_information = detailed_information
+        self.unparsed_information = detailed_information
         self.key_skills = key_skills
 
     def __str__(self):
@@ -45,6 +46,7 @@ class Vacancy:
         r = requests.get(path, headers={'User-Agent': 'Custom'})
         fp = open('tmp_hh.html', 'w', errors='ignore')
         fp.write(r.text)
+        print(path)
         soup = BeautifulSoup(r.text, 'lxml')
         # check if there is error in getting page info
         while not soup.find('h1', attrs={'data-qa': 'vacancy-title'}):
@@ -68,7 +70,7 @@ class Vacancy:
         detailed_information = cls.clearify(vacancy_details)
         vacancy = cls(id=id, title=title, salary=salary, experience=experience,
                       detailed_information=detailed_information, key_skills=key_skills)
-        print(id, title, salary, experience)
+        # print(id, title, salary, experience)
         vacancy._parse_salary()
         vacancy.parse_detailed_information()
         return vacancy
