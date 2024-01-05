@@ -4,8 +4,12 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 
 # для валют переписать parse_salary на фабрику функций или вроде того
 TAXES = 0.13
-USD_COURSE = 80
-KZT_COURSE = 0.8
+COURSES = {
+    'USD': 91,
+    'KZT': 0.2,
+    'руб': 1,
+    '₽': 1,
+}
 
 
 class Vacancy:
@@ -16,7 +20,6 @@ class Vacancy:
         self.salary = salary
         self.experience = experience
         self.detailed_information = detailed_information
-        self.unparsed_information = detailed_information
         self.key_skills = key_skills
 
     def __str__(self):
@@ -44,84 +47,19 @@ class Vacancy:
     def create_vacancy_from_id(cls, id):
         path = f'https://hh.ru/vacancy/{id}'
         r = requests.get(path, headers={'User-Agent': 'Custom'})
-        fp = open('tmp_hh.html', 'w', errors='ignore')
-        fp.write(r.text)
-        print(path)
         soup = BeautifulSoup(r.text, 'lxml')
         # check if there is error in getting page info
         while not soup.find('h1', attrs={'data-qa': 'vacancy-title'}):
             r = requests.get(path, headers={'User-Agent': 'Custom'})
             soup = BeautifulSoup(r.text, 'lxml')
-            soup.find('h1', attrs={'data-qa': 'vacancy-title'})
-        fp.write(soup.text)
-        fp.close()
-        title = ' '.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
-        salary = ' '.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
-        experience = ' '.join(soup.find('span', attrs={'data-qa': 'vacancy-experience'}).stripped_strings)
-        key_skills = []
-        key_skills_block = soup.find('div', class_='bloko-tag-list')
-        if key_skills_block:
-            key_skills = [str(key_skill.string) for key_skill in key_skills_block.find_all('span')]
-        vacancy_details = soup.find('div', class_='vacancy-branded-user-content')
-        if not vacancy_details:
-            vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
-        if not vacancy_details:
-            vacancy_details = soup.find('div', class_='g-user-content')
-        detailed_information = cls.clearify(vacancy_details)
+        title = Vacancy.parse_title(soup)
+        salary = Vacancy.parse_salary(soup)
+        experience = Vacancy.parse_experience(soup)
+        key_skills = Vacancy.parse_key_skills(soup)
+        detailed_information = Vacancy.parse_detailed_information(soup)
         vacancy = cls(id=id, title=title, salary=salary, experience=experience,
                       detailed_information=detailed_information, key_skills=key_skills)
-        # print(id, title, salary, experience)
-        vacancy._parse_salary()
-        vacancy.parse_detailed_information()
         return vacancy
-
-    def parse_detailed_information(self):
-        # list_points = ('•', '-', '—')
-        current_key = BeautifulSoup('<strong></strong>',
-                                    'html.parser').strong  # костыль для создания ключа с пустой строкой и тэгом strong
-        user_content_keys = []
-        user_content_parts = {}
-        for tag in self.detailed_information.descendants:
-            if tag.name == 'strong':
-                user_content_keys.append(tag)
-                current_key = tag
-            elif tag.name == 'ul':
-                user_content_parts[current_key] = tag
-        if len(user_content_keys) != len(user_content_parts.keys()):
-            for key in user_content_keys:
-                if key not in user_content_parts.keys():
-                    if key.string != key.parent.string:
-                        user_content_parts[key] = key.parent
-                    else:
-                        start_crazy_search = key.parent
-                        next_tag = start_crazy_search.find_next_sibling()
-                        complex_value = []
-                        while True:
-                            if not next_tag:
-                                break
-                            for child in next_tag.children:
-                                if isinstance(child, Tag) and child.name == 'strong':
-                                    break
-                            else:
-                                complex_value.append(next_tag)
-                                next_tag = next_tag.find_next_sibling()
-                                continue
-                            break
-                        user_content_parts[key] = complex_value
-        self.detailed_information = self.detag(user_content_parts)
-
-    def find_special_words_in_detailed_information(self):
-        english_word_template = re.compile(r'[A-Z][A-Za-z]*')
-        english_words = set()
-        for value in self.detailed_information.values():
-            if type(value) == list:
-                for string in value:
-                    some_words = english_word_template.findall(string)
-                    english_words.update(some_words)
-            else:
-                some_words = english_word_template.findall(value)
-                english_words.update(some_words)
-        return english_words
 
     @staticmethod
     def clearify(soup):
@@ -130,45 +68,44 @@ class Vacancy:
                 tag.replace_with(NavigableString(''))
         return soup
 
-    @classmethod
-    def parse_salary(cls, salary):
-        value_template = re.compile(r'[USD|KZT|руб].*')
-        value = value_template.search(salary).group()
-
-        salary = salary.replace('\xa0', '')
-        money_template = re.compile(r'(\d{3,7})')
-        salary_delta = list(map(int, money_template.findall(salary)))
-
-        if value.endswith('до вычета налогов'):
-            for i in range(len(salary_delta)):
-                salary_delta[i] = round(salary_delta[i] * (1-TAXES))
-            value = value.replace('до вычета налогов', 'на руки')
-
-        if 'USD' in value:
-            for i in range(len(salary_delta)):
-                salary_delta[i] = salary_delta[i] * USD_COURSE
-        elif 'KZT' in value:
-            for i in range(len(salary_delta)):
-                salary_delta[i] = salary_delta[i] * KZT_COURSE
-
-        return salary_delta
-
-    def _parse_salary(self):
-        self.salary = Vacancy.parse_salary(self.salary)
+    @staticmethod
+    def parse_title(soup):
+        return ''.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
 
     @staticmethod
-    def detag(parts):
-        detagged_parts = {}
-        for key, value in parts.items():
-            if isinstance(value, list):  # list of Tags by crazy_search
-                detagged_list = []
-                for part in value:
-                    detagged_list.append(part.text)
-                detagged_parts[key.string] = detagged_list
-            else:  # instance is Tag
-                if value.name == 'ul':
-                    detagged_parts[key.string] = [detail.text for detail in value.findAll('li')]
-                else:
-                    detagged_parts[key.string] = ' '.join(value.strings)
-            # print(key, type(key), type(value))
-        return detagged_parts
+    def parse_salary(soup):
+        salary = ''.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
+        salary = salary.replace('\xa0', '')  # заменяем разделитель разряда пустой строкой
+        currency_template = r'(' + '|'.join(COURSES.keys()) + ')(.*)'  # собираем шаблон из всех значимых валют
+        value_template = re.compile(currency_template)  # компилируем шаблон поиска
+        try:
+            currency, tax_flag = value_template.findall(salary)[0]  # выполняем поиск, группируем результат
+        except IndexError:
+            return []
+
+        money_template = re.compile(r'(\d{3,7})')
+        salary_delta = list(map(int, money_template.findall(salary))) # переводим все найденные значения в int, формируем список
+        for i in range(len(salary_delta)):  # нельзя воспользоваться итератором, надо отредактировать каждое значение в массиве
+            if tax_flag == 'до вычета налогов':  # высчитываем налог, чтобы не тешить себя иллюзиями
+                salary_delta[i] = round(salary_delta[i] * (1 - TAXES))
+            salary_delta[i] = salary_delta[i] * COURSES[currency]
+        return salary_delta
+
+    @staticmethod
+    def parse_experience(soup):
+        return ' '.join(soup.find('span', attrs={'data-qa': 'vacancy-experience'}).stripped_strings)
+
+    @staticmethod
+    def parse_key_skills(soup):
+        key_skills_block = soup.find('div', class_='bloko-tag-list')
+        key_skills = [str(key_skill.string) for key_skill in key_skills_block.find_all('span')] if key_skills_block else []
+        return key_skills
+
+    @staticmethod
+    def parse_detailed_information(soup):
+        vacancy_details = soup.find('div', class_='vacancy-branded-user-content')
+        if not vacancy_details:
+            vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
+        if not vacancy_details:
+            vacancy_details = soup.find('div', class_='g-user-content')
+        return Vacancy.clearify(vacancy_details)

@@ -22,13 +22,9 @@ class HHParser:
         self.pre_url_regex = re.compile(r'm.hh.ru/vacancy/(\d+)"},')
         self.vacancy_ids = set()
         self.vacancies = []
-        self.vacancies_filtered_by_salaries = []
-        self.vacancies_filtered_by_experience_and_salaries = []
-        self.key_skills_filtered_by_experience_and_salaries = {}
-        self.experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
-        self.experience_filtered_by_salaries = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
-        self.salaries = []
         self.key_skills = {}
+        self.experience = {'не требуется': 0, '1–3 года': 0, '3–6 лет': 0, 'более 6 лет': 0}
+        self.salaries = []
 
     def _get_vacancy_ids(self):
         request = requests.get(self.search_path, headers={'User-Agent': 'Custom'}, params=self.search_params)
