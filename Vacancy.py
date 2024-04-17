@@ -42,11 +42,12 @@ class Vacancy:
 
     @classmethod
     def create_vacancy_from_id(cls, id):
+        vacancy_dict = {}
         path = f'https://hh.ru/vacancy/{id}'
         r = requests.get(path, headers={'User-Agent': 'Custom'})
         fp = open('tmp_hh.html', 'w', errors='ignore')
         fp.write(r.text)
-        print(path)
+        # print(path)
         soup = BeautifulSoup(r.text, 'lxml')
         # check if there is error in getting page info
         while not soup.find('h1', attrs={'data-qa': 'vacancy-title'}):
@@ -56,9 +57,18 @@ class Vacancy:
         fp.write(soup.text)
         fp.close()
         title = ' '.join(soup.find('h1', attrs={'data-qa': 'vacancy-title'}).stripped_strings)
-        salary = ' '.join(soup.find('div', attrs={'data-qa': 'vacancy-salary'}).find('span').stripped_strings)
+        print('Title: ', title)
+        vacancy_dict['id'] = id
+        vacancy_dict['title'] = soup.find('h1', attrs={'data-qa': 'vacancy-title'})
+        vacancy_dict['salary_tag'] = soup.find('div', attrs={'data-qa': 'vacancy-salary'})
+        salary_tag = soup.find('div', attrs={'data-qa': 'vacancy-salary'})
+        salary = ' '.join(salary_tag.find('span').stripped_strings) if salary_tag else 0
+        print('Salary: ', salary)
+        vacancy_dict['experience'] = soup.find('span', attrs={'data-qa': 'vacancy-experience'})
         experience = ' '.join(soup.find('span', attrs={'data-qa': 'vacancy-experience'}).stripped_strings)
+        print('Experience: ', experience)
         key_skills = []
+        vacancy_dict['key_skills_block'] = soup.find('div', class_='bloko-tag-list')
         key_skills_block = soup.find('div', class_='bloko-tag-list')
         if key_skills_block:
             key_skills = [str(key_skill.string) for key_skill in key_skills_block.find_all('span')]
@@ -67,11 +77,16 @@ class Vacancy:
             vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
         if not vacancy_details:
             vacancy_details = soup.find('div', class_='g-user-content')
+        vacancy_dict['vacancy_details'] = cls.clearify(vacancy_details)
         detailed_information = cls.clearify(vacancy_details)
+
+        if vacancy_dict['title']:
+            vacancy_details['title'] = ' '.join(vacancy_dict['title'].stripped_strings)
+
         vacancy = cls(id=id, title=title, salary=salary, experience=experience,
                       detailed_information=detailed_information, key_skills=key_skills)
-        # print(id, title, salary, experience)
-        vacancy._parse_salary()
+        if salary:
+            vacancy._parse_salary()
         vacancy.parse_detailed_information()
         return vacancy
 
@@ -132,7 +147,8 @@ class Vacancy:
 
     @classmethod
     def parse_salary(cls, salary):
-        value_template = re.compile(r'[USD|KZT|руб].*')
+        print(salary)
+        value_template = re.compile(r'[USD|KZT|₽|$|€|руб].*')
         value = value_template.search(salary).group()
 
         salary = salary.replace('\xa0', '')
