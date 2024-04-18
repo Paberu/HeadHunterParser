@@ -1,10 +1,12 @@
 import json
 import re
+from pprint import pprint
 
 import requests
 from bs4 import BeautifulSoup
 
 from Vacancy import Vacancy
+
 
 
 def translate_key_skills_dict_to_list(key_skills_dict):
@@ -31,9 +33,11 @@ class HHParser:
         hh_response = request.text
         ids = set(self.pre_url_regex.findall(hh_response))
         soup = BeautifulSoup(hh_response, 'html.parser')
-        pages = max(map(int, [page.find(string=re.compile('\d+')) for page in
+        pages = max(map(int, [page.find(string=re.compile(r'\d+')) for page in
                               soup.find_all('a', attrs={'data-qa': 'pager-page'})]))
+        # print(f'Total count of vacancies is about {pages*50}. ')
         for page in range(2, pages + 1):
+            # print(f'About {50 * (page-1)} vacancy ids found.')
             self.search_params['page'] = page
             r = requests.get(self.search_path, headers={'User-Agent': 'Custom'}, params=self.search_params)
             ids.update(self.pre_url_regex.findall(r.text))
@@ -47,11 +51,15 @@ class HHParser:
 
     def get_vacancies(self):
         ids = self._get_vacancy_ids()
-        # ids = {'79582780', }
+        # ids = self._get_first_50_vacancie_ids()
+        count = 0
         for vacancy_id in ids:
             if vacancy_id not in self.vacancy_ids:
                 vacancy = Vacancy.create_vacancy_from_id(vacancy_id)
                 self.add_vacancy(vacancy)
+                count += 1
+                if count % 100 == 0:
+                    print(f'Total amount of processed vacancies is {count}. Have patience, please.')
 
     def add_vacancy(self, vacancy):
         self.vacancies.append(vacancy)
@@ -131,3 +139,9 @@ class HHParser:
                 obj_dict = json.loads(json_line)
                 self.add_vacancy(Vacancy.from_dict(obj_dict))
                 json_line = fp.readline()
+
+
+if __name__ == '__main__':
+    hhparser = HHParser('Python', None)
+    hhparser.get_vacancies()
+    pprint(hhparser.key_skills)
