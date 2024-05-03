@@ -45,11 +45,11 @@ class Vacancy(VacancyParser):
         while not soup.find('h1', attrs={'data-qa': 'vacancy-title'}):
             r = requests.get(path, headers={'User-Agent': 'Custom'})
             soup = BeautifulSoup(r.text, 'lxml')
-        title = Vacancy.parse_title(soup)
-        salary = Vacancy.parse_salary(soup)
-        experience = Vacancy.parse_experience(soup)
-        key_skills = Vacancy.parse_key_skills(soup)
-        detailed_information = Vacancy.parse_detailed_information(soup)
+        title = cls.parse_title(soup)
+        salary = cls.parse_salary(soup)
+        experience = cls.parse_experience(soup)
+        key_skills = cls.parse_key_skills(soup)
+        detailed_information = cls.parse_detailed_information(soup)
         vacancy = cls(id=id, title=title, salary=salary, experience=experience,
                       detailed_information=detailed_information, key_skills=key_skills)
         return vacancy
