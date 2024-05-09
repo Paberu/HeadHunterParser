@@ -47,6 +47,7 @@ class Vacancy(VacancyParser):
             soup = BeautifulSoup(r.text, 'lxml')
         title = cls.parse_title(soup)
         salary = cls.parse_salary(soup)
+        print(salary)
         experience = cls.parse_experience(soup)
         key_skills = cls.parse_key_skills(soup)
         detailed_information = cls.parse_detailed_information(soup)

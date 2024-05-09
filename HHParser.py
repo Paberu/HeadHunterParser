@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 from Vacancy import Vacancy
 
 
-
 def translate_key_skills_dict_to_list(key_skills_dict):
     sorted_key_skills = sorted(key_skills_dict.items(), key=lambda x: x[1], reverse=True)
     return [f'{skill[0]} - {skill[1]}' for skill in sorted_key_skills]
