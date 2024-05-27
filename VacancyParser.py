@@ -1,4 +1,6 @@
 import re
+from pprint import pprint
+
 import requests
 from bs4 import BeautifulSoup, NavigableString, Tag
 
@@ -43,12 +45,11 @@ class VacancyParser:
             return []
 
         money_template = re.compile(r'(\d{3,7})')
-        salary_delta = list(map(int, money_template.findall(salary))) # переводим все найденные значения в int, формируем список
-        for i in range(len(salary_delta)):  # нельзя воспользоваться итератором, надо отредактировать каждое значение в массиве
-            if tax_flag == 'до вычета налогов':  # высчитываем налог, чтобы не тешить себя иллюзиями
-                salary_delta[i] = round(salary_delta[i] * (1 - TAXES))
-            salary_delta[i] = salary_delta[i] * COURSES[currency]
-        return salary_delta
+        max_salary = max(map(int, money_template.findall(salary))) # переводим все найденные значения в int, формируем список
+        if tax_flag == 'до вычета налогов':  # высчитываем налог, чтобы не тешить себя иллюзиями
+            max_salary = round(max_salary * (1 - TAXES))
+        max_salary = max_salary * COURSES[currency]
+        return max_salary
 
     @staticmethod
     def parse_experience(soup):
@@ -67,4 +68,7 @@ class VacancyParser:
             vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
         if not vacancy_details:
             vacancy_details = soup.find('div', class_='g-user-content')
+        # pprint(vacancy_details)
+        vacancy_details.striped_strings
+
         return VacancyParser.clearify(vacancy_details)

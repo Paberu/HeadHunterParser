@@ -49,11 +49,13 @@ class HHParser:
         return ids
 
     def get_vacancies(self):
-        ids = self._get_vacancy_ids()
+        # ids = self._get_vacancy_ids()
         # ids = self._get_first_50_vacancie_ids()
+        ids = (99303379, 98771766, 99316937)
         count = 0
         for vacancy_id in ids:
             if vacancy_id not in self.vacancy_ids:
+                print(vacancy_id)
                 vacancy = Vacancy.create_vacancy_from_id(vacancy_id)
                 self.add_vacancy(vacancy)
                 count += 1
