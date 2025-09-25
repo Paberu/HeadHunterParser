@@ -1,8 +1,7 @@
 import re
-from pprint import pprint
 
-import requests
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import NavigableString
+
 
 # для валют переписать parse_salary на фабрику функций или вроде того
 TAXES = 0.13
@@ -68,7 +67,4 @@ class VacancyParser:
             vacancy_details = soup.find('div', attrs={'data_qa': 'vacancy_description'})
         if not vacancy_details:
             vacancy_details = soup.find('div', class_='g-user-content')
-        # pprint(vacancy_details)
-        vacancy_details.striped_strings
-
         return VacancyParser.clearify(vacancy_details)

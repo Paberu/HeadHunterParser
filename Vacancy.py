@@ -17,6 +17,9 @@ class Vacancy(VacancyParser):
     def __str__(self):
         return f'{str(self.id)} {str(self.title)}'
 
+    def __repr__(self):
+        return self.__dict__
+
     def to_dict(self):
         vacancy_dict = {'id': self.id, 'title': self.title, 'salary': self.salary, 'experience': self.experience,
                         'detailed_information': self.detailed_information, 'key_skills': self.key_skills}
@@ -32,12 +35,8 @@ class Vacancy(VacancyParser):
                       key_skills=vacancy_dict['key_skills'])
         return vacancy
 
-    def __repr__(self):
-        return self.__dict__
-
     @classmethod
     def create_vacancy_from_id(cls, id):
-        vacancy_dict = {}
         path = f'https://hh.ru/vacancy/{id}'
         r = requests.get(path, headers={'User-Agent': 'Custom'})
         soup = BeautifulSoup(r.text, 'lxml')
@@ -47,7 +46,6 @@ class Vacancy(VacancyParser):
             soup = BeautifulSoup(r.text, 'lxml')
         title = cls.parse_title(soup)
         salary = cls.parse_salary(soup)
-        print(salary)
         experience = cls.parse_experience(soup)
         key_skills = cls.parse_key_skills(soup)
         detailed_information = cls.parse_detailed_information(soup)
