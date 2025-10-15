@@ -50,8 +50,8 @@ class HHParser:
 
     def get_vacancies(self):
         # ids = self._get_vacancy_ids()
-        # ids = self._get_first_50_vacancie_ids()
-        ids = (99303379, 98771766, 99316937)
+        ids = self._get_first_50_vacancie_ids()
+        # ids = (99303379, 98771766, 99316937)
         count = 0
         for vacancy_id in ids:
             if vacancy_id not in self.vacancy_ids:
@@ -144,5 +144,7 @@ class HHParser:
 
 if __name__ == '__main__':
     hhparser = HHParser('Python', None)
-    hhparser.get_vacancies()
-    pprint(hhparser.key_skills)
+    ids = hhparser._get_first_50_vacancie_ids()
+    # map(Vacancy.save_vacancy_to_file, ids)
+    for id in ids:
+        Vacancy.save_vacancy_to_file(id)

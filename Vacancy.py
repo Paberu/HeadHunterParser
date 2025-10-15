@@ -52,3 +52,17 @@ class Vacancy(VacancyParser):
         vacancy = cls(id=id, title=title, salary=salary, experience=experience,
                       detailed_information=detailed_information, key_skills=key_skills)
         return vacancy
+
+    @classmethod
+    def save_vacancy_to_file(cls, id):
+        path = f'https://hh.ru/vacancy/{id}'
+        r = requests.get(path, headers={'User-Agent': 'Custom'})
+
+        soup = BeautifulSoup(r.text, 'lxml')
+        # check if there is error in getting page info
+        while not soup.find('h1', attrs={'data-qa': 'vacancy-title'}):
+            r = requests.get(path, headers={'User-Agent': 'Custom'})
+            soup = BeautifulSoup(r.text, 'lxml')
+
+        with open(f"{id}.html", "w", encoding="utf-8") as file:
+            file.write(str(soup))
